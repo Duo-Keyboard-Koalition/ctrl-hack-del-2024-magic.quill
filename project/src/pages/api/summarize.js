@@ -16,13 +16,20 @@ export default async function handler(req, res) {
     const form = formidable({
         multiples: false, // Only a single file is expected
     });
+
     form.parse(req, async (err, fields, files) => {
         if (err) {
             return res
             .status(500)
             .json({ message: "File parsing error", error: err.message });
         }
-        let simpletex_response = await simpletexHandler(files);
+        const file = Array.isArray(files.file) ? files.file[0] : files.file;
+        if (!file || !file.filepath) {
+          return res.status(400).json({ message: 'No file uploaded or file path is missing' });
+        }
+        const fileStream = fs.createReadStream(file.filepath);
+
+        let simpletex_response = await simpletexHandler(fileStream, file.originalFilename);
         simpletex_response = 'markdown' in simpletex_response ? simpletex_response['res']['info']['markdown'] : simpletex_response['res']['info'];
         console.log(simpletex_response);
 
